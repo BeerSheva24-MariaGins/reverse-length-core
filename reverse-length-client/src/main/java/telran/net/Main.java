@@ -1,17 +1,19 @@
 package telran.net;
 
+import java.util.HashSet;
+import java.util.List;
+import org.json.JSONObject;
 import telran.view.*;
 
 public class Main {
-    static Client client;
-    static String choice = "";
+    static ReverseLengthClient client;
 
     public static void main(String[] args) {
         Item[] items = {
                 Item.of("start session", Main::startSession),
                 Item.of("exit", Main::exit, true)
         };
-        Menu menu = new Menu("Client-Server Application", items);
+        Menu menu = new Menu("Application with request", items);
         menu.perform(new StandardInputOutput());
     }
 
@@ -21,31 +23,22 @@ public class Main {
         if (client != null) {
             client.close();
         }
-        client = new Client(host, port);
-
-        Menu menu = new Menu("Chose request",
-                Item.of("Return reverse string", Main::reverseProcessing),
-                Item.of("Return length of string", Main::lengthProcessing),
-                Item.ofGoBack());
+        client = new ReverseLengthClient(host, port);
+        Menu menu = new Menu("Run Session",
+                Item.of("New session", Main::sessionProcessing),
+                Item.ofExit());
         menu.perform(io);
 
-        Menu subMenu = new Menu("Run session",
-                Item.of("Enter string", Main::stringProcessing),
-                Item.ofExit());
-        subMenu.perform(io);
     }
 
-    static void reverseProcessing(InputOutput io) {
-        choice = "reverse";
-    }
-
-    static void lengthProcessing(InputOutput io) {
-        choice = "length";
-    }
-
-    static void stringProcessing(InputOutput io) {
+    static void sessionProcessing(InputOutput io) {
+        HashSet<String> types = new HashSet<>(List.of("reverse", "length"));
+        String type = io.readStringOptions("Enter operation type " + types, "Wrong type", types);
         String string = io.readString("Enter any string");
-        String response = client.sendAndReceive(string, choice);
+        JSONObject jsonObj = new JSONObject();
+        jsonObj.put("type", type);
+        jsonObj.put("string", string);
+        String response = client.sendAndReceive(jsonObj.toString());
         io.writeLine(response);
     }
 
